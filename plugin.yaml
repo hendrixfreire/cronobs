@@ -1,0 +1,9 @@
+name: cronobs
+version: 1.0.0
+description: "Cron Observatory — dashboard administrativo de cron jobs do Hermes. Visualiza, edita, pausa, executa, duplica, move e restaura jobs de todos os profiles via interface web local."
+author: hendrixfreire
+kind: standalone
+platforms:
+  - linux
+  - macos
+  - windows

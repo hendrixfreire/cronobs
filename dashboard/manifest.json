@@ -1,0 +1,13 @@
+{
+  "name": "cronobs",
+  "label": "Cronobs",
+  "description": "Cron Observatory — visual dashboard for cron jobs with cards, kanban, and drag-and-drop",
+  "icon": "Timer",
+  "version": "1.0.0",
+  "tab": {
+    "path": "/cronobs",
+    "position": "after:cron"
+  },
+  "slots": [],
+  "entry": "index.js"
+}
