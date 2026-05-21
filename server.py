@@ -844,7 +844,7 @@ HTML = r"""<!DOCTYPE html>
   .lang-picker{position:relative;margin-right:6px}
   .lang-trig{background:transparent;border:1px solid var(--border-visible);border-radius:4px;padding:3px 6px;font-size:calc(14px*var(--font-scale));cursor:pointer;opacity:.7;transition:all .15s;line-height:1}
   .lang-trig:hover{opacity:1;border-color:var(--accent)}
-  .lang-dd{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border-visible);border-radius:6px;padding:4px;z-index:100}
+  .lang-dd{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border-visible);border-radius:6px;padding:4px;z-index:9999}
   .lang-dd.open{display:flex;flex-direction:column;gap:2px}
   .lang-btn{background:transparent;border:1px solid transparent;border-radius:3px;padding:3px 4px;font-size:calc(15px*var(--font-scale));cursor:pointer;opacity:.6;transition:all .15s;line-height:1;text-align:center}
   .lang-btn:hover{opacity:1;border-color:var(--border-visible)}
@@ -1847,75 +1847,278 @@ try { currentFontScale = parseFloat(localStorage.getItem('cronobs-font-scale') |
 // ── I18N ───────────────────────────────────────────────────────────────────
 const L={
 pt:{fa:"Todos",fb:"Ativos",fc:"Pausados",va:"Cards",vb:"Kanban",vc:"Lista",
-td:"escuro",tl:"claro",sl:"ao vivo",bt:"Backups",
-st:"Total",sa:"Ativos",sp:"Pausados",se:"Execuções",spr:"Profiles",
+td:"escuro",tl:"claro",sl:"ao vivo",bt:"Backups",pl:"Profile",ph:"Shift = multi",
+vl:"Visual",kl:"Colunas",kp:"Profile",ks:"Status",kd:"Entrega",ka:"Agente",
+ol:"Ordenar",on:"Próximo",ou:"Último",oo:"Nome",
+dl:"Densidade",df:"Completo",dc:"Compacto",
+st:"Total",sa:"Ativos",sp:"Pausados",se:"Execuções",sr:"Profiles",
 et:"Nenhum job encontrado",es:"Ajuste os filtros ou crie um cron job via chat.",
-ca:"ATIVO",cp:"PAUSADO",ce:"exec.",ce0:"Editar",ce1:"Pausar",ce2:"Ativar",ce3:"Rodar",
+ca:"ATIVO",cp:"PAUSADO",ce:"exec.",cs:"Schedule",cn0:"Próximo",cu:"Último",
+csk:"Skills",cl0:"LLM",ct:"Tools & Runtime",
+ce0:"Editar",ce1:"Pausar",ce2:"Ativar",ce3:"Rodar",
 ce4:"Duplicar",ce5:"Mover",ce6:"Excluir",co:"✓ OK",cr:"✗ ERRO",cn:"—",
-cna:"no-agent",csc:"script",cch:"encadeado",
+cna:"no-agent",csc:"script",cch:"encadeado",cco:"Fechar/abrir card",
 tp:"Job pausado",tr:"Job ativado",td0:"Job excluído com backup",tr0:"Job enviado para execução",
 tk:"Kanban salvo",tb:"Backup restaurado",tn:"Sem alterações para salvar",tc:"Exclusão cancelada",
-fl:"Fonte "},
+tkan:"Salvar edição",tkanp:"alterações pendentes",tcnf:"Cancelar",
+trun:"Job enviado para execução",trunf:"Falha ao rodar:",
+fl:"Fonte ",ppt:"Prompt completo",lo:"Carregando...",at:"atualizado",
+me:"Editar job",meb:"Fechar",mev:"Salvar alteração",mep:"Preview diff",
+mr:"Backups & rollback",mrr:"Atualizar lista",mrs:"Restaurar",
+mct:"Confirmar ação",mco:"Confirmar",mdt:"Confirmar exclusão",
+msn:"Nenhuma skill selecionada",msl:"Carregando skills...",
+msf:"filtrar skills disponíveis...",msc:"Limpar",msx:"Fechar",
+msnf:"Nenhuma skill encontrada para este filtro.",
+lj:"Job",ls:"Status",le:"Exec.",lu:"Último",le0:"Entrega",lag:"Agente",
+mno:"Rodar como no-agent",mdn:"Nome",msc0:"Schedule",mpr:"Prompt",
+mde:"Entrega",msc1:"Script",msk:"Skills",mt:"Toolsets",mm:"Modelo",
+mp:"Provider",mb:"Base URL",mc:"Contexto de outros jobs",
+md:"Diff / validação",
+mrb:"Backups & rollback",mrs0:"Restaura o jobs.json inteiro de um profile",
+mlb:"Carregando backups...",mnb:"Nenhum backup encontrado para este profile.",
+mda:"Backup será criado antes da exclusão. Você pode restaurar depois via",
+ta:"Rodar este job agora?",tb0:"Isso pode consumir créditos/tokens e enviar mensagem no canal configurado.",
+tc0:"Duplicar este job?",td1:"A cópia será criada pausada e com histórico zerado.",
+te:"Mover este job de",tf:"?",tg:"Backups serão criados nos dois profiles.",
+th:"Restaurar",ti:"no profile",tj:"O jobs.json atual será salvo como backup antes.",
+tk0:"Digite RESTAURAR para confirmar rollback do profile inteiro.",
+tm:"Destino igual ao profile atual",ts0:"Salvar alterações neste cron job?",
+ts1:"Um backup será criado antes.",
+"js":"jobs","ec":"Rollback cancelado","sc":"Sem alterações."},
 en:{fa:"All",fb:"Active",fc:"Paused",va:"Cards",vb:"Kanban",vc:"List",
-td:"dark",tl:"light",sl:"live",bt:"Backups",
-st:"Total",sa:"Active",sp:"Paused",se:"Executions",spr:"Profiles",
+td:"dark",tl:"light",sl:"live",bt:"Backups",pl:"Profile",ph:"Shift = multi",
+vl:"View",kl:"Columns",kp:"Profile",ks:"Status",kd:"Delivery",ka:"Agent",
+ol:"Sort",on:"Next",ou:"Last",oo:"Name",
+dl:"Density",df:"Full",dc:"Compact",
+st:"Total",sa:"Active",sp:"Paused",se:"Executions",sr:"Profiles",
 et:"No jobs found",es:"Adjust filters or create a cron job via chat.",
-ca:"ACTIVE",cp:"PAUSED",ce:"exec.",ce0:"Edit",ce1:"Pause",ce2:"Resume",ce3:"Run",
+ca:"ACTIVE",cp:"PAUSED",ce:"exec.",cs:"Schedule",cn0:"Next",cu:"Last",
+csk:"Skills",cl0:"LLM",ct:"Tools & Runtime",
+ce0:"Edit",ce1:"Pause",ce2:"Resume",ce3:"Run",
 ce4:"Duplicate",ce5:"Move",ce6:"Delete",co:"✓ OK",cr:"✗ ERROR",cn:"—",
-cna:"no-agent",csc:"script",cch:"chained",
+cna:"no-agent",csc:"script",cch:"chained",cco:"Toggle card",
 tp:"Job paused",tr:"Job resumed",td0:"Job deleted with backup",tr0:"Job sent for execution",
 tk:"Kanban saved",tb:"Backup restored",tn:"No changes to save",tc:"Deletion cancelled",
-fl:"Font "},
+tkan:"Save edit",tkanp:"pending changes",tcnf:"Cancel",
+trun:"Job sent for execution",trunf:"Failed to run:",
+fl:"Font ",ppt:"Full prompt",lo:"Loading...",at:"updated",
+me:"Edit job",meb:"Close",mev:"Save change",mep:"Preview diff",
+mr:"Backups & rollback",mrr:"Refresh list",mrs:"Restore",
+mct:"Confirm action",mco:"Confirm",mdt:"Confirm deletion",
+msn:"No skills selected",msl:"Loading skills...",
+msf:"filter available skills...",msc:"Clear",msx:"Close",
+msnf:"No skills found for this filter.",
+lj:"Job",ls:"Status",le:"Exec.",lu:"Last",le0:"Delivery",lag:"Agent",
+mno:"Run as no-agent",mdn:"Name",msc0:"Schedule",mpr:"Prompt",
+mde:"Delivery",msc1:"Script",msk:"Skills",mt:"Toolsets",mm:"Model",
+mp:"Provider",mb:"Base URL",mc:"Context from other jobs",
+md:"Diff / validation",
+mrb:"Backups & rollback",mrs0:"Restores the entire profile jobs.json",
+mlb:"Loading backups...",mnb:"No backups found for this profile.",
+mda:"A backup will be created before deletion. You can restore via",
+ta:"Run this job now?",tb0:"This may consume credits/tokens and send a message to the configured channel.",
+tc0:"Duplicate this job?",td1:"The copy will be created paused with reset history.",
+te:"Move this job from",tf:"?",tg:"Backups will be created in both profiles.",
+th:"Restore",ti:"on profile",tj:"The current jobs.json will be saved as backup first.",
+tk0:"Type RESTORE to confirm rollback of the entire profile.",
+tm:"Destination is the same as the current profile",ts0:"Save changes to this cron job?",
+ts1:"A backup will be created first.",
+"js":"jobs","ec":"Rollback cancelled","sc":"No changes."},
 es:{fa:"Todos",fb:"Activos",fc:"Pausados",va:"Tarjetas",vb:"Kanban",vc:"Lista",
-td:"oscuro",tl:"claro",sl:"en vivo",bt:"Copias",
-st:"Total",sa:"Activos",sp:"Pausados",se:"Ejecuciones",spr:"Perfiles",
+td:"oscuro",tl:"claro",sl:"en vivo",bt:"Copias",pl:"Perfil",ph:"Shift = multi",
+vl:"Vista",kl:"Columnas",kp:"Perfil",ks:"Estado",kd:"Entrega",ka:"Agente",
+ol:"Ordenar",on:"Próximo",ou:"Último",oo:"Nombre",
+dl:"Densidad",df:"Completo",dc:"Compacto",
+st:"Total",sa:"Activos",sp:"Pausados",se:"Ejecuciones",sr:"Perfiles",
 et:"Sin trabajos",es:"Ajusta filtros o crea un cron job desde el chat.",
-ca:"ACTIVO",cp:"PAUSADO",ce:"ejec.",ce0:"Editar",ce1:"Pausar",ce2:"Activar",ce3:"Ejecutar",
+ca:"ACTIVO",cp:"PAUSADO",ce:"ejec.",cs:"Programación",cn0:"Próximo",cu:"Último",
+csk:"Habilidades",cl0:"LLM",ct:"Herramientas",
+ce0:"Editar",ce1:"Pausar",ce2:"Activar",ce3:"Ejecutar",
 ce4:"Duplicar",ce5:"Mover",ce6:"Eliminar",co:"✓ OK",cr:"✗ ERROR",cn:"—",
-cna:"sin-agente",csc:"script",cch:"encadenado",
+cna:"sin-agente",csc:"script",cch:"encadenado",cco:"Abrir/cerrar",
 tp:"Pausado",tr:"Activado",td0:"Eliminado con copia",tr0:"Enviado a ejecución",
 tk:"Kanban guardado",tb:"Copia restaurada",tn:"Sin cambios",tc:"Eliminación cancelada",
-fl:"Fuente "},
+tkan:"Guardar edición",tkanp:"cambios pendientes",tcnf:"Cancelar",
+trun:"Enviado a ejecución",trunf:"Error al ejecutar:",
+fl:"Fuente ",ppt:"Instrucción completa",lo:"Cargando...",at:"actualizado",
+me:"Editar trabajo",meb:"Cerrar",mev:"Guardar cambio",mep:"Vista previa",
+mr:"Copias y restauración",mrr:"Actualizar lista",mrs:"Restaurar",
+mct:"Confirmar acción",mco:"Confirmar",mdt:"Confirmar eliminación",
+msn:"Sin habilidades",msl:"Cargando habilidades...",
+msf:"filtrar habilidades...",msc:"Limpiar",msx:"Cerrar",
+msnf:"Sin habilidades para este filtro.",
+lj:"Trabajo",ls:"Estado",le:"Ejec.",lu:"Último",le0:"Entrega",lag:"Agente",
+mno:"Ejecutar sin agente",mdn:"Nombre",msc0:"Programación",mpr:"Instrucción",
+mde:"Entrega",msc1:"Script",msk:"Habilidades",mt:"Herramientas",mm:"Modelo",
+mp:"Proveedor",mb:"URL base",mc:"Contexto de otros trabajos",
+md:"Diff / validación",
+mrb:"Copias y restauración",mrs0:"Restaura el jobs.json del perfil completo",
+mlb:"Cargando copias...",mnb:"Sin copias para este perfil.",
+mda:"Se creará una copia antes de eliminar. Puedes restaurar desde",
+ta:"¿Ejecutar ahora?",tb0:"Puede consumir créditos/tokens y enviar mensaje al canal.",
+tc0:"¿Duplicar?",td1:"Copia pausada con historial reiniciado.",
+te:"Mover de",tf:"?",tg:"Copias en ambos perfiles.",
+th:"Restaurar",ti:"en perfil",tj:"El jobs.json actual se guardará como copia.",
+tk0:"Escribe RESTAURAR para confirmar.",
+tm:"Mismo perfil de destino",ts0:"¿Guardar cambios?",
+ts1:"Se creará una copia de seguridad.",
+"js":"trabajos","ec":"Restauración cancelada","sc":"Sin cambios."},
 fr:{fa:"Tous",fb:"Actifs",fc:"En pause",va:"Cartes",vb:"Kanban",vc:"Liste",
-td:"sombre",tl:"clair",sl:"en direct",bt:"Sauvegardes",
-st:"Total",sa:"Actifs",sp:"En pause",se:"Exécutions",spr:"Profils",
+td:"sombre",tl:"clair",sl:"en direct",bt:"Sauvegardes",pl:"Profil",ph:"Shift = multi",
+vl:"Vue",kl:"Colonnes",kp:"Profil",ks:"Statut",kd:"Livraison",ka:"Agent",
+ol:"Trier",on:"Prochain",ou:"Dernier",oo:"Nom",
+dl:"Densité",df:"Complet",dc:"Compact",
+st:"Total",sa:"Actifs",sp:"En pause",se:"Exécutions",sr:"Profils",
 et:"Aucune tâche",es:"Ajustez les filtres ou créez une tâche.",
-ca:"ACTIF",cp:"EN PAUSE",ce:"exéc.",ce0:"Modifier",ce1:"Pause",ce2:"Activer",ce3:"Exécuter",
+ca:"ACTIF",cp:"EN PAUSE",ce:"exéc.",cs:"Planification",cn0:"Prochain",cu:"Dernier",
+csk:"Compétences",cl0:"LLM",ct:"Outils",
+ce0:"Modifier",ce1:"Pause",ce2:"Activer",ce3:"Exécuter",
 ce4:"Dupliquer",ce5:"Déplacer",ce6:"Supprimer",co:"✓ OK",cr:"✗ ERREUR",cn:"—",
-cna:"sans-agent",csc:"script",cch:"chaîné",
+cna:"sans-agent",csc:"script",cch:"chaîné",cco:"Basculer",
 tp:"En pause",tr:"Activé",td0:"Supprimé avec sauvegarde",tr0:"Envoyé pour exécution",
 tk:"Kanban enregistré",tb:"Sauvegarde restaurée",tn:"Aucun changement",tc:"Suppression annulée",
-fl:"Police "},
+tkan:"Enregistrer",tkanp:"modifications",tcnf:"Annuler",
+trun:"Envoyé pour exécution",trunf:"Échec:",
+fl:"Police ",ppt:"Instruction complète",lo:"Chargement...",at:"actualisé",
+me:"Modifier la tâche",meb:"Fermer",mev:"Enregistrer",mep:"Aperçu",
+mr:"Sauvegardes",mrr:"Actualiser",mrs:"Restaurer",
+mct:"Confirmer",mco:"Confirmer",mdt:"Confirmer suppression",
+msn:"Aucune compétence",msl:"Chargement...",
+msf:"filtrer compétences...",msc:"Effacer",msx:"Fermer",
+msnf:"Aucune compétence trouvée.",
+lj:"Tâche",ls:"Statut",le:"Exéc.",lu:"Dernier",le0:"Livraison",lag:"Agent",
+mno:"Exécuter sans agent",mdn:"Nom",msc0:"Planification",mpr:"Instruction",
+mde:"Livraison",msc1:"Script",msk:"Compétences",mt:"Outils",mm:"Modèle",
+mp:"Fournisseur",mb:"URL de base",mc:"Contexte",
+md:"Diff / validation",
+mrb:"Sauvegardes",mrs0:"Restaure le jobs.json du profil entier",
+mlb:"Chargement...",mnb:"Aucune sauvegarde trouvée.",
+mda:"Une sauvegarde sera créée avant suppression. Restauration via",
+ta:"Exécuter maintenant?",tb0:"Peut consommer des crédits et envoyer un message.",
+tc0:"Dupliquer?",td1:"Copie en pause avec historique réinitialisé.",
+te:"Déplacer de",tf:"?",tg:"Sauvegardes dans les deux profils.",
+th:"Restaurer",ti:"sur le profil",tj:"Le jobs.json actuel sera sauvegardé.",
+tk0:"Tapez RESTAURER pour confirmer.",
+tm:"Même profil de destination",ts0:"Enregistrer les modifications?",
+ts1:"Une sauvegarde sera créée.",
+"js":"tâches","ec":"Restauration annulée","sc":"Aucun changement."},
 zh:{fa:"全部",fb:"活跃",fc:"暂停",va:"卡片",vb:"看板",vc:"列表",
-td:"暗色",tl:"亮色",sl:"实时",bt:"备份",
-st:"总计",sa:"活跃",sp:"暂停",se:"执行",spr:"配置文件",
+td:"暗色",tl:"亮色",sl:"实时",bt:"备份",pl:"配置文件",ph:"Shift = 多选",
+vl:"视图",kl:"列",kp:"配置文件",ks:"状态",kd:"交付",ka:"代理",
+ol:"排序",on:"下一个",ou:"上一个",oo:"名称",
+dl:"密度",df:"完整",dc:"紧凑",
+st:"总计",sa:"活跃",sp:"暂停",se:"执行",sr:"配置文件",
 et:"无任务",es:"调整过滤器或创建 cron 任务。",
-ca:"活跃",cp:"暂停",ce:"执行",ce0:"编辑",ce1:"暂停",ce2:"恢复",ce3:"运行",
+ca:"活跃",cp:"暂停",ce:"执行",cs:"计划",cn0:"下一个",cu:"上一个",
+csk:"技能",cl0:"LLM",ct:"工具",
+ce0:"编辑",ce1:"暂停",ce2:"恢复",ce3:"运行",
 ce4:"复制",ce5:"移动",ce6:"删除",co:"✓ 成功",cr:"✗ 错误",cn:"—",
-cna:"无代理",csc:"脚本",cch:"链式",
+cna:"无代理",csc:"脚本",cch:"链式",cco:"切换卡片",
 tp:"已暂停",tr:"已恢复",td0:"已删除（有备份）",tr0:"已发送执行",
 tk:"看板已保存",tb:"备份已恢复",tn:"无更改",tc:"删除已取消",
-fl:"字体 "},
+tkan:"保存编辑",tkanp:"待处理更改",tcnf:"取消",
+trun:"已发送执行",trunf:"运行失败:",
+fl:"字体 ",ppt:"完整指令",lo:"加载中...",at:"已更新",
+me:"编辑任务",meb:"关闭",mev:"保存更改",mep:"预览差异",
+mr:"备份与回滚",mrr:"刷新列表",mrs:"恢复",
+mct:"确认操作",mco:"确认",mdt:"确认删除",
+msn:"未选择技能",msl:"加载技能中...",
+msf:"筛选可用技能...",msc:"清除",msx:"关闭",
+msnf:"未找到匹配技能。",
+lj:"任务",ls:"状态",le:"执行",lu:"上一个",le0:"交付",lag:"代理",
+mno:"无代理运行",mdn:"名称",msc0:"计划",mpr:"指令",
+mde:"交付",msc1:"脚本",msk:"技能",mt:"工具集",mm:"模型",
+mp:"提供商",mb:"基础URL",mc:"其他任务的上下文",
+md:"差异 / 验证",
+mrb:"备份与回滚",mrs0:"恢复整个配置文件的 jobs.json",
+mlb:"加载备份中...",mnb:"未找到此配置文件的备份。",
+mda:"删除前将创建备份。可通过以下方式恢复:",
+ta:"立即运行?",tb0:"可能消耗积分/令牌并发送消息到配置的频道。",
+tc0:"复制?",td1:"将以暂停状态创建副本，历史记录已重置。",
+te:"移动自",tf:"?",tg:"将在两个配置文件中创建备份。",
+th:"恢复",ti:"在配置文件中",tj:"当前 jobs.json 将先保存为备份。",
+tk0:"输入 RESTAURAR 确认回滚。",
+tm:"目标与当前配置文件相同",ts0:"保存更改?",
+ts1:"将首先创建备份。",
+"js":"任务","ec":"回滚已取消","sc":"无更改。"},
 ja:{fa:"すべて",fb:"アクティブ",fc:"停止",va:"カード",vb:"かんばん",vc:"リスト",
-td:"ダーク",tl:"ライト",sl:"ライブ",bt:"バックアップ",
-st:"合計",sa:"アクティブ",sp:"停止中",se:"実行",spr:"プロファイル",
+td:"ダーク",tl:"ライト",sl:"ライブ",bt:"バックアップ",pl:"プロファイル",ph:"Shift = 複数",
+vl:"表示",kl:"列",kp:"プロファイル",ks:"ステータス",kd:"配信",ka:"エージェント",
+ol:"並び替え",on:"次回",ou:"前回",oo:"名前",
+dl:"密度",df:"完全",dc:"コンパクト",
+st:"合計",sa:"アクティブ",sp:"停止中",se:"実行",sr:"プロファイル",
 et:"ジョブなし",es:"フィルター調整またはチャットで作成。",
-ca:"有効",cp:"停止",ce:"実行",ce0:"編集",ce1:"停止",ce2:"再開",ce3:"実行",
+ca:"有効",cp:"停止",ce:"実行",cs:"スケジュール",cn0:"次回",cu:"前回",
+csk:"スキル",cl0:"LLM",ct:"ツール",
+ce0:"編集",ce1:"停止",ce2:"再開",ce3:"実行",
 ce4:"複製",ce5:"移動",ce6:"削除",co:"✓ 成功",cr:"✗ エラー",cn:"—",
-cna:"エージェントなし",csc:"スクリプト",cch:"連鎖",
+cna:"エージェントなし",csc:"スクリプト",cch:"連鎖",cco:"カード切替",
 tp:"停止済",tr:"再開済",td0:"削除済（バックアップあり）",tr0:"実行送信済",
 tk:"かんばん保存済",tb:"バックアップ復元済",tn:"変更なし",tc:"削除中止",
-fl:"フォント "},
+tkan:"保存",tkanp:"保留中の変更",tcnf:"キャンセル",
+trun:"実行送信済",trunf:"実行失敗:",
+fl:"フォント ",ppt:"完全な指示",lo:"読み込み中...",at:"更新済",
+me:"ジョブ編集",meb:"閉じる",mev:"保存",mep:"差分プレビュー",
+mr:"バックアップ",mrr:"更新",mrs:"復元",
+mct:"操作確認",mco:"確認",mdt:"削除確認",
+msn:"スキル未選択",msl:"読み込み中...",
+msf:"スキル絞り込み...",msc:"クリア",msx:"閉じる",
+msnf:"該当スキルなし。",
+lj:"ジョブ",ls:"状態",le:"実行",lu:"前回",le0:"配信",lag:"エージェント",
+mno:"エージェントなしで実行",mdn:"名前",msc0:"スケジュール",mpr:"指示",
+mde:"配信",msc1:"スクリプト",msk:"スキル",mt:"ツールセット",mm:"モデル",
+mp:"プロバイダ",mb:"ベースURL",mc:"他のジョブのコンテキスト",
+md:"差分 / 検証",
+mrb:"バックアップ",mrs0:"プロファイル全体の jobs.json を復元",
+mlb:"読み込み中...",mnb:"バックアップが見つかりません。",
+mda:"削除前にバックアップが作成されます。復元方法:",
+ta:"今すぐ実行?",tb0:"クレジット/トークンを消費し、設定チャンネルにメッセージを送信する可能性があります。",
+tc0:"複製?",td1:"履歴をリセットして停止状態でコピーを作成します。",
+te:"移動元",tf:"?",tg:"両方のプロファイルにバックアップが作成されます。",
+th:"復元",ti:"プロファイルに",tj:"現在の jobs.json が先に保存されます。",
+tk0:"RESTAURAR と入力して確認。",
+tm:"移動先が現在のプロファイルと同じです",ts0:"変更を保存?",
+ts1:"最初にバックアップが作成されます。",
+"js":"ジョブ","ec":"ロールバック中止","sc":"変更なし。"},
 ru:{fa:"Все",fb:"Активные",fc:"Пауза",va:"Карточки",vb:"Канбан",vc:"Список",
-td:"тёмная",tl:"светлая",sl:"онлайн",bt:"Бэкапы",
-st:"Всего",sa:"Активные",sp:"Пауза",se:"Запуски",spr:"Профили",
+td:"тёмная",tl:"светлая",sl:"онлайн",bt:"Бэкапы",pl:"Профиль",ph:"Shift = мульти",
+vl:"Вид",kl:"Колонки",kp:"Профиль",ks:"Статус",kd:"Доставка",ka:"Агент",
+ol:"Сорт.",on:"След.",ou:"Посл.",oo:"Имя",
+dl:"Плотность",df:"Полная",dc:"Компактная",
+st:"Всего",sa:"Активные",sp:"Пауза",se:"Запуски",sr:"Профили",
 et:"Нет задач",es:"Настройте фильтры или создайте задачу.",
-ca:"АКТИВНА",cp:"ПАУЗА",ce:"зап.",ce0:"Ред.",ce1:"Пауза",ce2:"Старт",ce3:"Запуск",
+ca:"АКТИВНА",cp:"ПАУЗА",ce:"зап.",cs:"Расписание",cn0:"След.",cu:"Посл.",
+csk:"Навыки",cl0:"LLM",ct:"Инструменты",
+ce0:"Ред.",ce1:"Пауза",ce2:"Старт",ce3:"Запуск",
 ce4:"Копия",ce5:"Перем.",ce6:"Удалить",co:"✓ OK",cr:"✗ ОШИБКА",cn:"—",
-cna:"без агента",csc:"скрипт",cch:"цепочка",
+cna:"без агента",csc:"скрипт",cch:"цепочка",cco:"Свернуть",
 tp:"На паузе",tr:"Активна",td0:"Удалена (бэкап)",tr0:"Отправлена на запуск",
 tk:"Канбан сохранён",tb:"Бэкап восстановлен",tn:"Без изменений",tc:"Удаление отменено",
-fl:"Шрифт "}
+tkan:"Сохранить",tkanp:"ожидающих изменений",tcnf:"Отмена",
+trun:"Отправлена на запуск",trunf:"Ошибка запуска:",
+fl:"Шрифт ",ppt:"Полная инструкция",lo:"Загрузка...",at:"обновлено",
+me:"Редактировать",meb:"Закрыть",mev:"Сохранить",mep:"Предпросмотр",
+mr:"Бэкапы",mrr:"Обновить",mrs:"Восстановить",
+mct:"Подтвердить",mco:"Подтвердить",mdt:"Подтвердить удаление",
+msn:"Навыки не выбраны",msl:"Загрузка...",
+msf:"фильтр навыков...",msc:"Очистить",msx:"Закрыть",
+msnf:"Навыки не найдены.",
+lj:"Задача",ls:"Статус",le:"Зап.",lu:"Посл.",le0:"Доставка",lag:"Агент",
+mno:"Запустить без агента",mdn:"Имя",msc0:"Расписание",mpr:"Инструкция",
+mde:"Доставка",msc1:"Скрипт",msk:"Навыки",mt:"Инструменты",mm:"Модель",
+mp:"Провайдер",mb:"Базовый URL",mc:"Контекст других задач",
+md:"Дифф / проверка",
+mrb:"Бэкапы",mrs0:"Восстанавливает jobs.json всего профиля",
+mlb:"Загрузка...",mnb:"Бэкапы не найдены.",
+mda:"Перед удалением будет создан бэкап. Восстановить через",
+ta:"Запустить сейчас?",tb0:"Может израсходовать кредиты и отправить сообщение в канал.",
+tc0:"Скопировать?",td1:"Копия будет создана на паузе со сбросом истории.",
+te:"Переместить из",tf:"?",tg:"Бэкапы в обоих профилях.",
+th:"Восстановить",ti:"в профиле",tj:"Текущий jobs.json будет сохранён как бэкап.",
+tk0:"Введите RESTAURAR для подтверждения.",
+tm:"Назначение совпадает с текущим профилем",ts0:"Сохранить изменения?",
+ts1:"Сначала будет создан бэкап.",
+"js":"задач","ec":"Откат отменён","sc":"Без изменений."}
 };
 let cl='pt';
 try{cl=localStorage.getItem('cronobs-lang')||'pt'}catch(e){}
@@ -1929,18 +2132,60 @@ function renderLangButtons(){
 }
 document.addEventListener('click',e=>{const d=document.getElementById('lang-dd');if(d&&!e.target.closest('.lang-picker'))d.classList.remove('open')});
 function updateUITexts(){
+  // Filter buttons
   document.querySelectorAll('#filter-status .filter-btn').forEach(b=>{
     const f=b.dataset.filter;if(f==='all')b.textContent=t('fa');else if(f==='active')b.textContent=t('fb');else if(f==='paused')b.textContent=t('fc');
   });
+  // View buttons
   document.querySelectorAll('#view-mode .view-toggle').forEach(b=>{
     const v=b.dataset.view;if(v==='cards')b.textContent=t('va');else if(v==='kanban')b.textContent=t('vb');else if(v==='list')b.textContent=t('vc');
   });
-  [[document.getElementById('stat-total-lbl'),'st'],[document.getElementById('stat-active-lbl'),'sa'],
-   [document.getElementById('stat-paused-lbl'),'sp'],[document.getElementById('stat-exec-lbl'),'se'],
-   [document.getElementById('stat-profiles-lbl'),'spr']].forEach(([e,k])=>{if(e)e.textContent=t(k)});
+  // Stats labels
+  const el=id=>document.getElementById(id);
+  [[el('stat-total-lbl'),'st'],[el('stat-active-lbl'),'sa'],[el('stat-paused-lbl'),'sp'],
+   [el('stat-exec-lbl'),'se'],[el('stat-profiles-lbl'),'sr']].forEach(([e,k])=>{if(e)e.textContent=t(k)});
+  // Empty state
   const eh=document.querySelector('#empty-state h3'),ep=document.querySelector('#empty-state p');
   if(eh)eh.textContent=t('et');if(ep)ep.textContent=t('es');
+  // Backup button
   const bl=document.getElementById('backup-btn-lbl');if(bl)bl.textContent=t('bt');
+  // Theme label (will be updated by applyTheme)
+  // Font label — updated by applyFontScale
+  // Profile label
+  const plab=document.querySelector('.ctrl-label');
+  // Control labels — find by position/text
+  document.querySelectorAll('.ctrl-label').forEach(l=>{
+    const p=l.parentElement;const txt=l.textContent.trim();
+    if(txt==='Profile'||txt==='Perfil'||txt==='Vista'||txt==='View'||txt==='表示'||txt==='Вид'){
+      // Determine which label based on parent context
+      const prev=l.previousElementSibling;
+      if(prev&&prev.tagName==='SPAN')l.textContent=t('pl');
+      else if(l.closest('#filter-profile'))l.textContent=t('pl');
+      else l.textContent=t('vl');
+    }
+  });
+  // Profile hint
+  const hint=document.querySelector('.profile-filter-hint');if(hint)hint.textContent=t('ph');
+  // Sort select options
+  const ss=document.getElementById('sort-select');if(ss){
+    ss.options[0].text=t('on');if(ss.options[1])ss.options[1].text=t('ou');if(ss.options[2])ss.options[2].text=t('oo');
+  }
+  // Density select
+  const ds=document.getElementById('density-select');if(ds){
+    ds.options[0].text=t('df');if(ds.options[1])ds.options[1].text=t('dc');
+  }
+  // Kanban dimension select
+  const kd=document.getElementById('kanban-dimension');if(kd){
+    kd.options[0].text=t('kp');if(kd.options[1])kd.options[1].text=t('ks');
+    if(kd.options[2])kd.options[2].text=t('kd');if(kd.options[3])kd.options[3].text=t('ka');
+  }
+  // Kanban save bar
+  const ksb=document.getElementById('kanban-save-btn');if(ksb)ksb.textContent=t('tkan');
+  // Prompt tooltip title
+  const ptt=document.querySelector('.prompt-tooltip-title');if(ptt)ptt.textContent=t('ppt');
+  // Backup button (header)
+  const bbl=document.getElementById('backup-btn-lbl');if(bbl)bbl.textContent=t('bt');
+  // Render refreshes dynamic content— let render handle card/list/kanban
 }
 // ── THEME ─────────────────────────────────────────────────────────────────
 function isDayTime() {
