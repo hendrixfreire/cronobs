@@ -1763,6 +1763,38 @@ HTML = r"""<!DOCTYPE html>
     <div id="backup-list" class="backup-list"></div>
   </div>
 </aside>
+<aside id="delete-confirm-modal" class="edit-modal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">Confirmar exclusão</div>
+      <div class="modal-subtitle" id="delete-confirm-subtitle">—</div>
+    </div>
+    <button class="modal-btn" onclick="closeDeleteConfirmModal()">Cancelar</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-help">Backup será criado antes da exclusão. Você pode restaurar depois via <strong>Backups & rollback</strong>.</div>
+  </div>
+  <div class="modal-actions">
+    <button class="modal-btn" onclick="closeDeleteConfirmModal()">Cancelar</button>
+    <button class="modal-btn primary" onclick="confirmDeleteJob()">Excluir</button>
+  </div>
+</aside>
+<aside id="confirm-modal" class="edit-modal">
+  <div class="modal-header">
+    <div>
+      <div class="modal-title">Confirmar ação</div>
+      <div class="modal-subtitle" id="confirm-subtitle">—</div>
+    </div>
+    <button class="modal-btn" onclick="closeConfirmModal()">Cancelar</button>
+  </div>
+  <div class="modal-body">
+    <div class="modal-help" id="confirm-help"></div>
+  </div>
+  <div class="modal-actions">
+    <button class="modal-btn" onclick="closeConfirmModal()">Cancelar</button>
+    <button class="modal-btn primary" onclick="executeConfirm()">Confirmar</button>
+  </div>
+</aside>
 <div id="toast" class="toast"></div>
 <div id="kanban-save-bar" class="kanban-save-bar">
   <span class="kanban-save-meta" id="kanban-save-meta">0 alterações pendentes</span>
@@ -1778,12 +1810,16 @@ let selectedProfiles = new Set(['all']);
 let currentSort = 'next_run';
 let currentView = 'cards';
 let kanbanDimension = 'profile';
-let currentDensity = localStorage.getItem('cronobs-density') || 'full';
+let currentDensity = 'full';
+try { currentDensity = localStorage.getItem('cronobs-density') || 'full'; } catch (e) {}
 let listSorts = [{ key: 'next_run', dir: 'asc' }];
-let collapsedJobs = new Set(JSON.parse(localStorage.getItem('cronobs-collapsed') || '[]'));
+let collapsedJobs = new Set();
+try { collapsedJobs = new Set(JSON.parse(localStorage.getItem('cronobs-collapsed') || '[]')); } catch (e) {}
 let isDark = true; // set properly on init
 let refreshTimer;
 let editingJob = null;
+let pendingDeleteJob = null;
+let pendingConfirmCallback = null;
 let lastFetchAt = null;
 let draggedListColumn = null;
 let draggedKanbanJobKey = null;
@@ -1792,6 +1828,11 @@ let profileSkillsCache = new Map();
 let selectedEditSkills = new Set();
 let currentSkillOptions = [];
 let currentSkillProfile = 'default';
+const FONT_MIN = 0.8;
+const FONT_MAX = 1.8;
+const FONT_STEP = 0.1;
+let currentFontScale = 1;
+try { currentFontScale = parseFloat(localStorage.getItem('cronobs-font-scale') || '1'); } catch (e) {}
 
 // ── THEME ─────────────────────────────────────────────────────────────────
 function isDayTime() {
@@ -1804,7 +1845,7 @@ function applyTheme(light) {
   document.body.classList.toggle('light', light);
   document.getElementById('theme-icon').textContent = light ? '☾' : '☀';
   document.getElementById('theme-label').textContent = light ? 'escuro' : 'claro';
-  localStorage.setItem('cronobs-theme', light ? 'light' : 'dark');
+  try { localStorage.setItem('cronobs-theme', light ? 'light' : 'dark'); } catch (e) {}
 }
 
 function toggleTheme() {
@@ -1812,7 +1853,8 @@ function toggleTheme() {
 }
 
 function initTheme() {
-  const saved = localStorage.getItem('cronobs-theme');
+  let saved = null;
+  try { saved = localStorage.getItem('cronobs-theme'); } catch (e) {}
   if (saved) {
     applyTheme(saved === 'light');
   } else {
@@ -1821,18 +1863,13 @@ function initTheme() {
 }
 
 // ── FONT SCALE ───────────────────────────────────────────────────────────
-const FONT_MIN = 0.6;
-const FONT_MAX = 1.8;
-const FONT_STEP = 0.1;
-let currentFontScale = parseFloat(localStorage.getItem('cronobs-font-scale') || '1');
-
 function applyFontScale(scale) {
   scale = Math.round(scale * 10) / 10; // 1 decimal
   scale = Math.max(FONT_MIN, Math.min(FONT_MAX, scale));
   currentFontScale = scale;
   document.documentElement.style.setProperty('--font-scale', scale);
   document.getElementById('font-label').textContent = Math.round(scale * 100) + '%';
-  localStorage.setItem('cronobs-font-scale', scale);
+  try { localStorage.setItem('cronobs-font-scale', scale); } catch (e) {}
 }
 
 function increaseFont() { applyFontScale(currentFontScale + FONT_STEP); }
@@ -2224,7 +2261,7 @@ function toggleCardCollapse(event, jobKey) {
   event.stopPropagation();
   if (collapsedJobs.has(jobKey)) collapsedJobs.delete(jobKey);
   else collapsedJobs.add(jobKey);
-  localStorage.setItem('cronobs-collapsed', JSON.stringify([...collapsedJobs]));
+  try { localStorage.setItem('cronobs-collapsed', JSON.stringify([...collapsedJobs])); } catch (e) {}
   render();
 }
 
@@ -2270,7 +2307,8 @@ const LIST_COLUMNS_DEFAULT = [
   ['name','Job'], ['profile','Profile'], ['status','Status'], ['executions','Exec.'],
   ['next_run','Próximo'], ['last_run','Último'], ['deliver','Entrega'], ['agent','Agente'], ['_actions','Ações']
 ];
-let listColumnOrder = JSON.parse(localStorage.getItem('cronobs-list-columns') || 'null') || LIST_COLUMNS_DEFAULT.map(c => c[0]);
+let listColumnOrder = LIST_COLUMNS_DEFAULT.map(c => c[0]);
+try { listColumnOrder = JSON.parse(localStorage.getItem('cronobs-list-columns') || 'null') || LIST_COLUMNS_DEFAULT.map(c => c[0]); } catch (e) {}
 
 function listColumns() {
   const byKey = new Map(LIST_COLUMNS_DEFAULT.map(c => [c[0], c]));
@@ -2281,7 +2319,7 @@ function listColumns() {
 }
 
 function saveListColumnOrder() {
-  localStorage.setItem('cronobs-list-columns', JSON.stringify(listColumnOrder));
+  try { localStorage.setItem('cronobs-list-columns', JSON.stringify(listColumnOrder)); } catch (e) {}
 }
 
 function handleColumnDragStart(ev, key) {
@@ -2512,22 +2550,27 @@ function updateKanbanSaveBar() {
 
 async function saveKanbanEdits() {
   if (!pendingKanbanEdits.size) return;
-  if (!confirm(`Salvar ${pendingKanbanEdits.size} alteração(ões) feitas no kanban? Backups serão criados.`)) return;
-  const edits = [...pendingKanbanEdits.values()];
-  try {
-    for (const edit of edits) {
-      if (edit.type === 'move') await apiPost('/api/job/move', { profile: edit.profile, id: edit.id, target_profile: edit.target_profile });
-      if (edit.type === 'status') await apiPost('/api/job/status', { profile: edit.profile, id: edit.id, action: edit.action });
-      if (edit.type === 'update') await apiPost('/api/job/update', edit);
+  openConfirmModal(
+    `Salvar ${pendingKanbanEdits.size} alteração(ões) no kanban?`,
+    'Backups serão criados automaticamente.',
+    async () => {
+      const edits = [...pendingKanbanEdits.values()];
+      try {
+        for (const edit of edits) {
+          if (edit.type === 'move') await apiPost('/api/job/move', { profile: edit.profile, id: edit.id, target_profile: edit.target_profile });
+          if (edit.type === 'status') await apiPost('/api/job/status', { profile: edit.profile, id: edit.id, action: edit.action });
+          if (edit.type === 'update') await apiPost('/api/job/update', edit);
+        }
+        pendingKanbanEdits.clear();
+        updateKanbanSaveBar();
+        showToast('Kanban salvo');
+        await fetchJobs();
+      } catch(e) {
+        showToast(e.message);
+        await fetchJobs();
+      }
     }
-    pendingKanbanEdits.clear();
-    updateKanbanSaveBar();
-    showToast('Kanban salvo');
-    await fetchJobs();
-  } catch(e) {
-    showToast(e.message);
-    await fetchJobs();
-  }
+  );
 }
 
 function renderKanban(jobs, grid) {
@@ -2883,11 +2926,13 @@ function closeEditModal() {
   closeSkillsPicker();
   document.getElementById('modal-backdrop').classList.remove('open');
   document.getElementById('edit-modal').classList.remove('open');
+  document.getElementById('delete-confirm-modal').classList.remove('open');
 }
 
 function closeAllModals() {
   closeEditModal();
   closeRollbackModal();
+  closeDeleteConfirmModal();
 }
 
 function editPayload() {
@@ -2933,11 +2978,16 @@ async function saveEdit() {
     box.textContent = preview.changed ? preview.diff : 'Sem alterações.';
     box.classList.add('open');
     if (!preview.changed) return showToast('Sem alterações para salvar');
-    if (!confirm('Salvar alterações neste cron job? Um backup será criado antes.')) return;
-    const data = await apiPost('/api/job/update', editPayload());
-    showToast(`Salvo. Backup: ${data.backup ? data.backup.split('/').slice(-2).join('/') : 'ok'}`);
-    closeEditModal();
-    await fetchJobs();
+    openConfirmModal(
+      'Salvar alterações neste cron job?',
+      'Um backup será criado antes.',
+      async () => {
+        const data = await apiPost('/api/job/update', editPayload());
+        showToast(`Salvo. Backup: ${data.backup ? data.backup.split('/').slice(-2).join('/') : 'ok'}`);
+        closeEditModal();
+        await fetchJobs();
+      }
+    );
   } catch (e) {
     showToast(e.message);
   }
@@ -2945,8 +2995,6 @@ async function saveEdit() {
 
 async function toggleJobStatus(event, profile, jobId, action) {
   event?.stopPropagation();
-  const label = action === 'pause' ? 'pausar' : 'ativar';
-  if (!confirm(`Confirmar ${label} este job?`)) return;
   try {
     await apiPost('/api/job/status', { profile, id: jobId, action });
     showToast(action === 'pause' ? 'Job pausado' : 'Job ativado');
@@ -2956,12 +3004,17 @@ async function toggleJobStatus(event, profile, jobId, action) {
 
 async function runJobNow(event, profile, jobId) {
   event?.stopPropagation();
-  if (!confirm('Rodar este job agora? Isso pode consumir créditos/tokens e enviar mensagem no canal configurado.')) return;
-  try {
-    const data = await apiPost('/api/job/run', { profile, id: jobId });
-    showToast(data.run?.ok ? 'Job enviado para execução' : `Falha ao rodar: ${data.run?.stderr || 'erro'}`);
-    await fetchJobs();
-  } catch (e) { showToast(e.message); }
+  openConfirmModal(
+    'Rodar este job agora?',
+    'Isso pode consumir créditos/tokens e enviar mensagem no canal configurado.',
+    async () => {
+      try {
+        const data = await apiPost('/api/job/run', { profile, id: jobId });
+        showToast(data.run?.ok ? 'Job enviado para execução' : `Falha ao rodar: ${data.run?.stderr || 'erro'}`);
+        await fetchJobs();
+      } catch (e) { showToast(e.message); }
+    }
+  );
 }
 
 async function duplicateJob(event, profile, jobId) {
@@ -2972,12 +3025,17 @@ async function duplicateJob(event, profile, jobId) {
   const defaultName = `${job?.name || jobId} cópia`;
   const name = prompt('Nome da cópia:', defaultName);
   if (!name) return;
-  if (!confirm('Duplicar este job? A cópia será criada pausada e com histórico zerado.')) return;
-  try {
-    const data = await apiPost('/api/job/duplicate', { profile, id: jobId, target_profile: target.trim(), name: name.trim() });
-    showToast(`Job duplicado: ${data.new_job_id}`);
-    await fetchJobs();
-  } catch (e) { showToast(e.message); }
+  openConfirmModal(
+    'Duplicar este job?',
+    'A cópia será criada pausada e com histórico zerado.',
+    async () => {
+      try {
+        const data = await apiPost('/api/job/duplicate', { profile, id: jobId, target_profile: target.trim(), name: name.trim() });
+        showToast(`Job duplicado: ${data.new_job_id}`);
+        await fetchJobs();
+      } catch (e) { showToast(e.message); }
+    }
+  );
 }
 
 async function moveJob(event, profile, jobId) {
@@ -2986,19 +3044,66 @@ async function moveJob(event, profile, jobId) {
   const target = prompt(`Mover para qual profile?\nOpções: ${choices.join(', ')}`, choices[0] || 'default');
   if (!target) return;
   if (target.trim() === profile) return showToast('Destino igual ao profile atual');
-  if (!confirm(`Mover este job de ${profile} para ${target.trim()}? Backups serão criados nos dois profiles.`)) return;
-  try {
-    await apiPost('/api/job/move', { profile, id: jobId, target_profile: target.trim() });
-    showToast(`Job movido para ${target.trim()}`);
-    await fetchJobs();
-  } catch (e) { showToast(e.message); }
+  openConfirmModal(
+    `Mover este job de ${profile} para ${target.trim()}?`,
+    'Backups serão criados nos dois profiles.',
+    async () => {
+      try {
+        await apiPost('/api/job/move', { profile, id: jobId, target_profile: target.trim() });
+        showToast(`Job movido para ${target.trim()}`);
+        await fetchJobs();
+      } catch (e) { showToast(e.message); }
+    }
+  );
 }
 
 async function deleteJob(event, profile, jobId) {
   event?.stopPropagation();
   const job = allJobs.find(j => (j._profile || 'default') === profile && j.id === jobId);
-  const typed = prompt(`Excluir job "${job?.name || jobId}"?\nDigite EXCLUIR para confirmar. Backup será criado antes.`);
-  if (typed !== 'EXCLUIR') return showToast('Exclusão cancelada');
+  pendingDeleteJob = { profile, jobId };
+  document.getElementById('delete-confirm-subtitle').textContent = `Excluir job "${job?.name || jobId}"?`;
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('delete-confirm-modal').classList.add('open');
+}
+
+function openConfirmModal(message, helpText, onConfirm) {
+  pendingConfirmCallback = onConfirm;
+  document.getElementById('confirm-subtitle').textContent = message;
+  document.getElementById('confirm-help').innerHTML = helpText || '';
+  document.getElementById('modal-backdrop').classList.add('open');
+  document.getElementById('confirm-modal').classList.add('open');
+}
+
+function closeConfirmModal() {
+  pendingConfirmCallback = null;
+  document.getElementById('confirm-modal').classList.remove('open');
+  if (!document.getElementById('edit-modal')?.classList.contains('open') &&
+      !document.getElementById('delete-confirm-modal')?.classList.contains('open')) {
+    document.getElementById('modal-backdrop')?.classList.remove('open');
+  }
+}
+
+function executeConfirm() {
+  if (!pendingConfirmCallback) return;
+  const cb = pendingConfirmCallback;
+  pendingConfirmCallback = null;
+  closeConfirmModal();
+  cb();
+}
+
+function closeDeleteConfirmModal() {
+  pendingDeleteJob = null;
+  document.getElementById('delete-confirm-modal').classList.remove('open');
+  if (!document.getElementById('edit-modal')?.classList.contains('open')) {
+    document.getElementById('modal-backdrop')?.classList.remove('open');
+  }
+}
+
+async function confirmDeleteJob() {
+  if (!pendingDeleteJob) return;
+  const { profile, jobId } = pendingDeleteJob;
+  pendingDeleteJob = null;
+  closeDeleteConfirmModal();
   try {
     await apiPost('/api/job/delete', { profile, id: jobId });
     showToast('Job excluído com backup');
@@ -3047,30 +3152,24 @@ async function loadBackups() {
 }
 
 async function restoreBackup(profile, backup) {
-  if (!confirm(`Restaurar ${backup} no profile ${profile}? O jobs.json atual será salvo como backup antes.`)) return;
-  const typed = prompt('Digite RESTAURAR para confirmar rollback do profile inteiro.');
-  if (typed !== 'RESTAURAR') return showToast('Rollback cancelado');
-  try {
-    await apiPost('/api/backup/restore', { profile, backup });
-    showToast('Backup restaurado');
-    closeRollbackModal();
-    await fetchJobs();
-  } catch (e) { showToast(e.message); }
+  openConfirmModal(
+    `Restaurar ${backup} no profile ${profile}?`,
+    'O jobs.json atual será salvo como backup antes.',
+    async () => {
+      const typed = prompt('Digite RESTAURAR para confirmar rollback do profile inteiro.');
+      if (typed !== 'RESTAURAR') return showToast('Rollback cancelado');
+      try {
+        await apiPost('/api/backup/restore', { profile, backup });
+        showToast('Backup restaurado');
+        closeRollbackModal();
+        await fetchJobs();
+      } catch (e) {
+        showToast(e.message);
+      }
+    }
+  );
 }
 
-// ── CLOCK ─────────────────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const t = now.toLocaleTimeString('pt-BR', {
-    hour:'2-digit', minute:'2-digit', second:'2-digit',
-    timeZone:'America/Sao_Paulo'
-  });
-  const d = now.toLocaleDateString('pt-BR', {
-    weekday:'short', day:'2-digit', month:'2-digit',
-    timeZone:'America/Sao_Paulo'
-  });
-  document.getElementById('clock').textContent = `${d.toUpperCase()} · ${t}`;
-}
 
 // ── CONTROLS EVENTS ───────────────────────────────────────────────────────
 document.querySelectorAll('#filter-status .filter-btn').forEach(btn => {
@@ -3104,7 +3203,7 @@ document.getElementById('kanban-dimension').addEventListener('change', e => {
 document.getElementById('density-select').value = currentDensity;
 document.getElementById('density-select').addEventListener('change', e => {
   currentDensity = e.target.value;
-  localStorage.setItem('cronobs-density', currentDensity);
+  try { localStorage.setItem('cronobs-density', currentDensity); } catch (e) {}
   render();
 });
 
@@ -3122,7 +3221,6 @@ function manualRefresh() {
   fetchJobs().finally(() => {
     btn.classList.remove('spinning');
     document.getElementById('refresh-label').textContent = 'ao vivo · 30s';
-    // reset auto-refresh timer so manual refresh doesn't get followed by stale auto-refresh
     clearInterval(refreshTimer);
     refreshTimer = setInterval(fetchJobs, 30000);
   });
@@ -3132,7 +3230,6 @@ initTheme();
 initFontScale();
 fetchJobs();
 
-// Keyboard shortcuts: Cmd/Ctrl + = (increase), Cmd/Ctrl + - (decrease), Cmd/Ctrl + 0 (reset)
 document.addEventListener('keydown', function(e) {
   if (!(e.metaKey || e.ctrlKey)) return;
   if (e.key === '=' || e.key === '+') { e.preventDefault(); increaseFont(); }
