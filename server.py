@@ -841,6 +841,14 @@ HTML = r"""<!DOCTYPE html>
     transition: border-color 0.2s, color 0.2s;
     user-select: none;
   }
+  .lang-picker{position:relative;margin-right:6px}
+  .lang-trig{background:transparent;border:1px solid var(--border-visible);border-radius:4px;padding:3px 6px;font-size:calc(14px*var(--font-scale));cursor:pointer;opacity:.7;transition:all .15s;line-height:1}
+  .lang-trig:hover{opacity:1;border-color:var(--accent)}
+  .lang-dd{display:none;position:absolute;top:100%;right:0;margin-top:4px;background:var(--bg-elevated);border:1px solid var(--border-visible);border-radius:6px;padding:4px;z-index:100}
+  .lang-dd.open{display:flex;flex-direction:column;gap:2px}
+  .lang-btn{background:transparent;border:1px solid transparent;border-radius:3px;padding:3px 4px;font-size:calc(15px*var(--font-scale));cursor:pointer;opacity:.6;transition:all .15s;line-height:1;text-align:center}
+  .lang-btn:hover{opacity:1;border-color:var(--border-visible)}
+  .lang-btn.act{opacity:1;border-color:var(--accent)}
   .theme-toggle:hover { border-color: var(--accent); color: var(--accent-bright); }
   .theme-icon { font-size: calc(12px * var(--font-scale)); }
 
@@ -1532,6 +1540,7 @@ HTML = r"""<!DOCTYPE html>
       <div class="refresh-dot"></div>
       <span id="refresh-label">ao vivo · 30s</span>
     </div>
+    <div class="lang-picker" id="lang-picker"></div>
     <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()">
       <span class="theme-icon" id="theme-icon">☀</span>
       <span id="theme-label">claro</span>
@@ -1545,7 +1554,7 @@ HTML = r"""<!DOCTYPE html>
       <span class="sync-icon">↻</span>
       <span>agora</span>
     </button>
-    <button class="header-backup-btn" onclick="openRollbackModal()">Backups</button>
+    <button class="header-backup-btn" onclick="openRollbackModal()"><span id="backup-btn-lbl">Backups</span></button>
   </div>
 </div>
 
@@ -1560,7 +1569,7 @@ HTML = r"""<!DOCTYPE html>
   <div class="stats-row">
     <div class="stat-block">
       <div class="stat-value" id="stat-total">—</div>
-      <div class="stat-label">jobs totais</div>
+      <div class="stat-label" id="stat-total-lbl">jobs totais</div>
     </div>
     <div class="stat-block">
       <div class="stat-value success" id="stat-active">—</div>
@@ -1834,6 +1843,105 @@ const FONT_STEP = 0.1;
 let currentFontScale = 1;
 try { currentFontScale = parseFloat(localStorage.getItem('cronobs-font-scale') || '1'); } catch (e) {}
 
+
+// ── I18N ───────────────────────────────────────────────────────────────────
+const L={
+pt:{fa:"Todos",fb:"Ativos",fc:"Pausados",va:"Cards",vb:"Kanban",vc:"Lista",
+td:"escuro",tl:"claro",sl:"ao vivo",bt:"Backups",
+st:"Total",sa:"Ativos",sp:"Pausados",se:"Execuções",spr:"Profiles",
+et:"Nenhum job encontrado",es:"Ajuste os filtros ou crie um cron job via chat.",
+ca:"ATIVO",cp:"PAUSADO",ce:"exec.",ce0:"Editar",ce1:"Pausar",ce2:"Ativar",ce3:"Rodar",
+ce4:"Duplicar",ce5:"Mover",ce6:"Excluir",co:"✓ OK",cr:"✗ ERRO",cn:"—",
+cna:"no-agent",csc:"script",cch:"encadeado",
+tp:"Job pausado",tr:"Job ativado",td0:"Job excluído com backup",tr0:"Job enviado para execução",
+tk:"Kanban salvo",tb:"Backup restaurado",tn:"Sem alterações para salvar",tc:"Exclusão cancelada",
+fl:"Fonte "},
+en:{fa:"All",fb:"Active",fc:"Paused",va:"Cards",vb:"Kanban",vc:"List",
+td:"dark",tl:"light",sl:"live",bt:"Backups",
+st:"Total",sa:"Active",sp:"Paused",se:"Executions",spr:"Profiles",
+et:"No jobs found",es:"Adjust filters or create a cron job via chat.",
+ca:"ACTIVE",cp:"PAUSED",ce:"exec.",ce0:"Edit",ce1:"Pause",ce2:"Resume",ce3:"Run",
+ce4:"Duplicate",ce5:"Move",ce6:"Delete",co:"✓ OK",cr:"✗ ERROR",cn:"—",
+cna:"no-agent",csc:"script",cch:"chained",
+tp:"Job paused",tr:"Job resumed",td0:"Job deleted with backup",tr0:"Job sent for execution",
+tk:"Kanban saved",tb:"Backup restored",tn:"No changes to save",tc:"Deletion cancelled",
+fl:"Font "},
+es:{fa:"Todos",fb:"Activos",fc:"Pausados",va:"Tarjetas",vb:"Kanban",vc:"Lista",
+td:"oscuro",tl:"claro",sl:"en vivo",bt:"Copias",
+st:"Total",sa:"Activos",sp:"Pausados",se:"Ejecuciones",spr:"Perfiles",
+et:"Sin trabajos",es:"Ajusta filtros o crea un cron job desde el chat.",
+ca:"ACTIVO",cp:"PAUSADO",ce:"ejec.",ce0:"Editar",ce1:"Pausar",ce2:"Activar",ce3:"Ejecutar",
+ce4:"Duplicar",ce5:"Mover",ce6:"Eliminar",co:"✓ OK",cr:"✗ ERROR",cn:"—",
+cna:"sin-agente",csc:"script",cch:"encadenado",
+tp:"Pausado",tr:"Activado",td0:"Eliminado con copia",tr0:"Enviado a ejecución",
+tk:"Kanban guardado",tb:"Copia restaurada",tn:"Sin cambios",tc:"Eliminación cancelada",
+fl:"Fuente "},
+fr:{fa:"Tous",fb:"Actifs",fc:"En pause",va:"Cartes",vb:"Kanban",vc:"Liste",
+td:"sombre",tl:"clair",sl:"en direct",bt:"Sauvegardes",
+st:"Total",sa:"Actifs",sp:"En pause",se:"Exécutions",spr:"Profils",
+et:"Aucune tâche",es:"Ajustez les filtres ou créez une tâche.",
+ca:"ACTIF",cp:"EN PAUSE",ce:"exéc.",ce0:"Modifier",ce1:"Pause",ce2:"Activer",ce3:"Exécuter",
+ce4:"Dupliquer",ce5:"Déplacer",ce6:"Supprimer",co:"✓ OK",cr:"✗ ERREUR",cn:"—",
+cna:"sans-agent",csc:"script",cch:"chaîné",
+tp:"En pause",tr:"Activé",td0:"Supprimé avec sauvegarde",tr0:"Envoyé pour exécution",
+tk:"Kanban enregistré",tb:"Sauvegarde restaurée",tn:"Aucun changement",tc:"Suppression annulée",
+fl:"Police "},
+zh:{fa:"全部",fb:"活跃",fc:"暂停",va:"卡片",vb:"看板",vc:"列表",
+td:"暗色",tl:"亮色",sl:"实时",bt:"备份",
+st:"总计",sa:"活跃",sp:"暂停",se:"执行",spr:"配置文件",
+et:"无任务",es:"调整过滤器或创建 cron 任务。",
+ca:"活跃",cp:"暂停",ce:"执行",ce0:"编辑",ce1:"暂停",ce2:"恢复",ce3:"运行",
+ce4:"复制",ce5:"移动",ce6:"删除",co:"✓ 成功",cr:"✗ 错误",cn:"—",
+cna:"无代理",csc:"脚本",cch:"链式",
+tp:"已暂停",tr:"已恢复",td0:"已删除（有备份）",tr0:"已发送执行",
+tk:"看板已保存",tb:"备份已恢复",tn:"无更改",tc:"删除已取消",
+fl:"字体 "},
+ja:{fa:"すべて",fb:"アクティブ",fc:"停止",va:"カード",vb:"かんばん",vc:"リスト",
+td:"ダーク",tl:"ライト",sl:"ライブ",bt:"バックアップ",
+st:"合計",sa:"アクティブ",sp:"停止中",se:"実行",spr:"プロファイル",
+et:"ジョブなし",es:"フィルター調整またはチャットで作成。",
+ca:"有効",cp:"停止",ce:"実行",ce0:"編集",ce1:"停止",ce2:"再開",ce3:"実行",
+ce4:"複製",ce5:"移動",ce6:"削除",co:"✓ 成功",cr:"✗ エラー",cn:"—",
+cna:"エージェントなし",csc:"スクリプト",cch:"連鎖",
+tp:"停止済",tr:"再開済",td0:"削除済（バックアップあり）",tr0:"実行送信済",
+tk:"かんばん保存済",tb:"バックアップ復元済",tn:"変更なし",tc:"削除中止",
+fl:"フォント "},
+ru:{fa:"Все",fb:"Активные",fc:"Пауза",va:"Карточки",vb:"Канбан",vc:"Список",
+td:"тёмная",tl:"светлая",sl:"онлайн",bt:"Бэкапы",
+st:"Всего",sa:"Активные",sp:"Пауза",se:"Запуски",spr:"Профили",
+et:"Нет задач",es:"Настройте фильтры или создайте задачу.",
+ca:"АКТИВНА",cp:"ПАУЗА",ce:"зап.",ce0:"Ред.",ce1:"Пауза",ce2:"Старт",ce3:"Запуск",
+ce4:"Копия",ce5:"Перем.",ce6:"Удалить",co:"✓ OK",cr:"✗ ОШИБКА",cn:"—",
+cna:"без агента",csc:"скрипт",cch:"цепочка",
+tp:"На паузе",tr:"Активна",td0:"Удалена (бэкап)",tr0:"Отправлена на запуск",
+tk:"Канбан сохранён",tb:"Бэкап восстановлен",tn:"Без изменений",tc:"Удаление отменено",
+fl:"Шрифт "}
+};
+let cl='pt';
+try{cl=localStorage.getItem('cronobs-lang')||'pt'}catch(e){}
+function t(k){return(L[cl]&&L[cl][k])||(L.pt&&L.pt[k])||k}
+function setLang(l){cl=l;try{localStorage.setItem('cronobs-lang',l)}catch(e){}render();updateStats();updateLastUpdateLabel();renderLangButtons();updateUITexts()}
+function renderLangButtons(){
+  const w=document.getElementById('lang-picker');if(!w)return;
+  const L=[{c:'pt',f:'🇧🇷'},{c:'en',f:'🇺🇸'},{c:'es',f:'🇪🇸'},{c:'fr',f:'🇫🇷'},{c:'zh',f:'🇨🇳'},{c:'ja',f:'🇯🇵'},{c:'ru',f:'🇷🇺'}];
+  const cu=L.find(l=>l.c===cl)||L[0];
+  w.innerHTML=`<button class="lang-trig" onclick="event.stopPropagation();document.getElementById('lang-dd').classList.toggle('open')">${cu.f}</button><div class="lang-dd" id="lang-dd">${L.map(l=>`<button class="lang-btn${l.c===cl?' act':''}" onclick="setLang('${l.c}')">${l.f}</button>`).join('')}</div>`;
+}
+document.addEventListener('click',e=>{const d=document.getElementById('lang-dd');if(d&&!e.target.closest('.lang-picker'))d.classList.remove('open')});
+function updateUITexts(){
+  document.querySelectorAll('#filter-status .filter-btn').forEach(b=>{
+    const f=b.dataset.filter;if(f==='all')b.textContent=t('fa');else if(f==='active')b.textContent=t('fb');else if(f==='paused')b.textContent=t('fc');
+  });
+  document.querySelectorAll('#view-mode .view-toggle').forEach(b=>{
+    const v=b.dataset.view;if(v==='cards')b.textContent=t('va');else if(v==='kanban')b.textContent=t('vb');else if(v==='list')b.textContent=t('vc');
+  });
+  [[document.getElementById('stat-total-lbl'),'st'],[document.getElementById('stat-active-lbl'),'sa'],
+   [document.getElementById('stat-paused-lbl'),'sp'],[document.getElementById('stat-exec-lbl'),'se'],
+   [document.getElementById('stat-profiles-lbl'),'spr']].forEach(([e,k])=>{if(e)e.textContent=t(k)});
+  const eh=document.querySelector('#empty-state h3'),ep=document.querySelector('#empty-state p');
+  if(eh)eh.textContent=t('et');if(ep)ep.textContent=t('es');
+  const bl=document.getElementById('backup-btn-lbl');if(bl)bl.textContent=t('bt');
+}
 // ── THEME ─────────────────────────────────────────────────────────────────
 function isDayTime() {
   const h = new Date().getHours();
@@ -1844,7 +1952,7 @@ function applyTheme(light) {
   isDark = !light;
   document.body.classList.toggle('light', light);
   document.getElementById('theme-icon').textContent = light ? '☾' : '☀';
-  document.getElementById('theme-label').textContent = light ? 'escuro' : 'claro';
+  document.getElementById('theme-label').textContent = light ? t('td') : t('tl');
   try { localStorage.setItem('cronobs-theme', light ? 'light' : 'dark'); } catch (e) {}
 }
 
@@ -2123,7 +2231,7 @@ function buildCard(job) {
   const llmParts = [];
   if (hasModel) llmParts.push(`<span class="tag tag-llm">modelo: ${job.model}</span>`);
   if (job.provider) llmParts.push(`<span class="tag tag-llm">${job.provider}</span>`);
-  if (noAgent) llmParts.push(`<span class="tag tag-no-agent">no-agent</span>`);
+  if (noAgent) llmParts.push(`<span class="tag tag-no-agent">${t('cna')}</span>`);
   const llmHtml = llmParts.length > 0
     ? `<div class="card-section">
         <div class="section-title">LLM</div>
@@ -2133,8 +2241,8 @@ function buildCard(job) {
 
   const toolParts = [];
   toolsets.forEach(t => toolParts.push(`<span class="tag tag-toolset">${t}</span>`));
-  if (hasScript) toolParts.push(`<span class="tag tag-script">script</span>`);
-  if (hasChain) toolParts.push(`<span class="tag tag-chain">encadeado</span>`);
+  if (hasScript) toolParts.push(`<span class="tag tag-script">${t('csc')}</span>`);
+  if (hasChain) toolParts.push(`<span class="tag tag-chain">${t('cch')}</span>`);
   const toolsHtml = toolParts.length > 0
     ? `<div class="card-section">
         <div class="section-title">Tools & Runtime</div>
@@ -2162,7 +2270,7 @@ function buildCard(job) {
         </div>
         <div class="card-header-actions">
           <div class="card-top-metrics">
-            <div class="status-badge ${isActive ? 'active' : 'paused'}">${isActive ? 'ATIVO' : 'PAUSADO'}</div>
+            <div class="status-badge ${isActive ? 'active' : 'paused'}">${isActive ? t('ca') : t('cp')}</div>
             <div class="executions-top">
               <div class="executions-top-number">${executions}</div>
               <div class="executions-top-label">exec.</div>
@@ -2206,12 +2314,12 @@ function buildCard(job) {
       </div>
       <div class="card-footer">
         <div class="job-actions">
-          <button class="job-action-btn edit" onclick="openEditModal(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Editar</button>
-          <button class="job-action-btn ${isActive ? 'danger' : ''}" onclick="toggleJobStatus(event, '${escapeJs(profile)}', '${escapeJs(job.id)}', '${isActive ? 'pause' : 'resume'}')">${isActive ? 'Pausar' : 'Ativar'}</button>
-          <button class="job-action-btn run" onclick="runJobNow(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Rodar</button>
-          <button class="job-action-btn struct" onclick="duplicateJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Duplicar</button>
-          <button class="job-action-btn struct" onclick="moveJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Mover</button>
-          <button class="job-action-btn delete" onclick="deleteJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Excluir</button>
+          <button class="job-action-btn edit" onclick="openEditModal(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">${t('ce0')}</button>
+          <button class="job-action-btn ${isActive ? 'danger' : ''}" onclick="toggleJobStatus(event, '${escapeJs(profile)}', '${escapeJs(job.id)}', '${isActive ? 'pause' : 'resume'}')">${isActive ? t('ce1') : t('ce2')}</button>
+          <button class="job-action-btn run" onclick="runJobNow(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">${t('ce3')}</button>
+          <button class="job-action-btn struct" onclick="duplicateJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">${t('ce4')}</button>
+          <button class="job-action-btn struct" onclick="moveJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">${t('ce5')}</button>
+          <button class="job-action-btn delete" onclick="deleteJob(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">${t('ce6')}</button>
         </div>
       </div>
     </div>
@@ -2563,7 +2671,7 @@ async function saveKanbanEdits() {
         }
         pendingKanbanEdits.clear();
         updateKanbanSaveBar();
-        showToast('Kanban salvo');
+        showToast(t('tk'));
         await fetchJobs();
       } catch(e) {
         showToast(e.message);
@@ -2695,6 +2803,7 @@ function render() {
   } else {
     renderList(jobs, grid);
   }
+  updateUITexts();
 }
 
 function updateStats() {
@@ -2977,7 +3086,7 @@ async function saveEdit() {
     const box = document.getElementById('edit-diff');
     box.textContent = preview.changed ? preview.diff : 'Sem alterações.';
     box.classList.add('open');
-    if (!preview.changed) return showToast('Sem alterações para salvar');
+    if (!preview.changed) return showToast(t('tn'));
     openConfirmModal(
       'Salvar alterações neste cron job?',
       'Um backup será criado antes.',
@@ -2997,7 +3106,7 @@ async function toggleJobStatus(event, profile, jobId, action) {
   event?.stopPropagation();
   try {
     await apiPost('/api/job/status', { profile, id: jobId, action });
-    showToast(action === 'pause' ? 'Job pausado' : 'Job ativado');
+    showToast(action === 'pause' ? t('tp') : t('tr'));
     await fetchJobs();
   } catch (e) { showToast(e.message); }
 }
@@ -3010,7 +3119,7 @@ async function runJobNow(event, profile, jobId) {
     async () => {
       try {
         const data = await apiPost('/api/job/run', { profile, id: jobId });
-        showToast(data.run?.ok ? 'Job enviado para execução' : `Falha ao rodar: ${data.run?.stderr || 'erro'}`);
+        showToast(data.run?.ok ? t('tr0') : `Falha ao rodar: ${data.run?.stderr || 'erro'}`);
         await fetchJobs();
       } catch (e) { showToast(e.message); }
     }
@@ -3106,7 +3215,7 @@ async function confirmDeleteJob() {
   closeDeleteConfirmModal();
   try {
     await apiPost('/api/job/delete', { profile, id: jobId });
-    showToast('Job excluído com backup');
+    showToast(t('td0'));
     await fetchJobs();
   } catch (e) { showToast(e.message); }
 }
@@ -3160,7 +3269,7 @@ async function restoreBackup(profile, backup) {
       if (typed !== 'RESTAURAR') return showToast('Rollback cancelado');
       try {
         await apiPost('/api/backup/restore', { profile, backup });
-        showToast('Backup restaurado');
+        showToast(t('tb'));
         closeRollbackModal();
         await fetchJobs();
       } catch (e) {
@@ -3226,6 +3335,7 @@ function manualRefresh() {
   });
 }
 
+renderLangButtons();
 initTheme();
 initFontScale();
 fetchJobs();
