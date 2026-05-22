@@ -2731,9 +2731,9 @@ function kanbanGroupForDimension(job, dimension) {
   if (dimension === 'status') return { label: isActive ? 'Ativos' : 'Pausados', value: isActive ? 'active' : 'paused' };
   if (dimension === 'profile') return { label: job._profile || 'default', value: job._profile || 'default' };
   if (dimension === 'deliver') return { label: `${deliver.platform} · ${deliver.channel}`, value: job.deliver || '' };
-  if (dimension === 'agent') return { label: job.no_agent ? 'No-agent' : 'Com LLM', value: job.no_agent ? 'no-agent' : 'llm' };
+  if (dimension === 'agent') return { label: job.no_agent ? t('cna') : t('cl0'), value: job.no_agent ? 'no-agent' : 'llm' };
   if (dimension === 'next_window') {
-    if (!job.next_run_at) return { label: 'Sem próximo run', value: 'none' };
+    if (!job.next_run_at) return { label: t('no_next'), value: 'none' };
     const min = Math.floor((new Date(job.next_run_at) - new Date()) / 60000);
     if (min < 0) return { label: 'Passou', value: 'passed' };
     if (min < 60) return { label: '< 1h', value: 'lt1h' };
@@ -2755,8 +2755,8 @@ function kanbanTargets(jobs) {
     return profiles.map(p => ({ label: p, value: p }));
   }
   if (kanbanDimension === 'agent') return [
-    { label: 'Com LLM', value: 'llm' },
-    { label: 'No-agent', value: 'no-agent' }
+    { label: t('cl0'), value: 'llm' },
+    { label: t('cna'), value: 'no-agent' }
   ];
   if (kanbanDimension === 'next_window') return [
     { label: '< 1h', value: 'lt1h' },
@@ -2764,7 +2764,7 @@ function kanbanTargets(jobs) {
     { label: 'Hoje', value: 'today' },
     { label: 'Esta semana', value: 'week' },
     { label: 'Depois', value: 'later' },
-    { label: 'Sem próximo run', value: 'none' }
+    { label: t('no_next'), value: 'none' }
   ];
   if (kanbanDimension === 'deliver') {
     const map = new Map();
@@ -2911,7 +2911,7 @@ async function saveKanbanEdits() {
   if (!pendingKanbanEdits.size) return;
   openConfirmModal(
     `Salvar ${pendingKanbanEdits.size} alteração(ões) no kanban?`,
-    'Backups serão criados automaticamente.',
+    t('ts1'),
     async () => {
       const edits = [...pendingKanbanEdits.values()];
       try {
@@ -3117,7 +3117,7 @@ async function fetchJobs() {
     document.getElementById('refresh-label').textContent = 'ao vivo · 30s';
   } catch(e) {
     bar.style.width = '0%';
-    document.getElementById('refresh-label').textContent = 'erro conexão';
+    document.getElementById('refresh-label').textContent = 'connection error';
     console.error(e);
   }
 }
@@ -3156,7 +3156,7 @@ async function fetchSkillsForProfile(profile) {
 
 function selectedSkillsLabel() {
   const skills = [...selectedEditSkills];
-  if (!skills.length) return 'Nenhuma skill selecionada';
+  if (!skills.length) return t('msn');
   if (skills.length <= 3) return skills.join(', ');
   return `${skills.length} skills selecionadas · ${skills.slice(0, 3).join(', ')}...`;
 }
@@ -3296,7 +3296,7 @@ function closeAllModals() {
 }
 
 function editPayload() {
-  if (!editingJob) throw new Error('Nenhum job em edição');
+  if (!editingJob) throw new Error('No job being edited');
   return {
     profile: editingJob.profile,
     id: editingJob.jobId,
@@ -3319,7 +3319,7 @@ async function previewEdit() {
   try {
     const data = await apiPost('/api/job/preview', editPayload());
     const box = document.getElementById('edit-diff');
-    box.textContent = data.changed ? data.diff : 'Sem alterações.';
+    box.textContent = data.changed ? data.diff : t('sc');
     box.classList.add('open');
     showToast(data.changed ? 'Preview gerado' : 'Nada mudou');
   } catch (e) {
@@ -3335,12 +3335,12 @@ async function saveEdit() {
   try {
     const preview = await apiPost('/api/job/preview', editPayload());
     const box = document.getElementById('edit-diff');
-    box.textContent = preview.changed ? preview.diff : 'Sem alterações.';
+    box.textContent = preview.changed ? preview.diff : t('sc');
     box.classList.add('open');
     if (!preview.changed) return showToast(t('tn'));
     openConfirmModal(
       'Salvar alterações neste cron job?',
-      'Um backup será criado antes.',
+      t('ts1'),
       async () => {
         const data = await apiPost('/api/job/update', editPayload());
         showToast(`Salvo. Backup: ${data.backup ? data.backup.split('/').slice(-2).join('/') : 'ok'}`);
@@ -3406,7 +3406,7 @@ async function moveJob(event, profile, jobId) {
   if (target.trim() === profile) return showToast('Destino igual ao profile atual');
   openConfirmModal(
     `Mover este job de ${profile} para ${target.trim()}?`,
-    'Backups serão criados nos dois profiles.',
+    t('tg'),
     async () => {
       try {
         await apiPost('/api/job/move', { profile, id: jobId, target_profile: target.trim() });
@@ -3514,7 +3514,7 @@ async function loadBackups() {
 async function restoreBackup(profile, backup) {
   openConfirmModal(
     `Restaurar ${backup} no profile ${profile}?`,
-    'O jobs.json atual será salvo como backup antes.',
+    t('tj'),
     async () => {
       const typed = prompt('Digite RESTAURAR para confirmar rollback do profile inteiro.');
       if (typed !== 'RESTAURAR') return showToast('Rollback cancelado');
