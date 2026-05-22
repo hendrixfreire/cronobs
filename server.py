@@ -2656,6 +2656,12 @@ function getVisible() {
   return jobs;
 }
 
+
+function translateCol(key) {
+  const m = {'name':'lj','profile':'pl','status':'ls','executions':'le',
+             'next_run':'on','last_run':'ou','deliver':'le0','agent':'lag'};
+  return t(m[key]);
+}
 const LIST_COLUMNS_DEFAULT = [
   ['name','Job'], ['profile','Profile'], ['status','Status'], ['executions','Exec.'],
   ['next_run','Próximo'], ['last_run','Último'], ['deliver','Entrega'], ['agent','Agente'], ['_actions','Ações']
@@ -2979,12 +2985,12 @@ function renderListCell(job, key) {
   const profile = job._profile || 'default';
   if (key === 'name') return `<td><span class="table-name">${escapeHtml(job.name)}</span>${promptIcon(job)}</td>`;
   if (key === 'profile') return `<td><span class="card-profile-tag" style="${profileStyle(profile)}">${profile}</span></td>`;
-  if (key === 'status') return `<td><span class="status-badge ${isActive ? 'active' : 'paused'}">${isActive ? 'ATIVO' : 'PAUSADO'}</span></td>`;
+  if (key === 'status') return `<td><span class="status-badge ${isActive ? 'active' : 'paused'}">${isActive ? t('ca') : t('cp')}</span></td>`;
   if (key === 'executions') return `<td class="table-muted">${job.repeat?.completed || 0}</td>`;
   if (key === 'next_run') return `<td>${job.next_run_at ? `${countdown(job.next_run_at).text} <span class="table-muted">${fmtDateTime(job.next_run_at)}</span>` : '<span class="table-muted">—</span>'}</td>`;
   if (key === 'last_run') return `<td>${relativeTime(job.last_run_at)}</td>`;
   if (key === 'deliver') return `<td>${deliver.platform} · ${deliver.channel}</td>`;
-  if (key === 'agent') return `<td><span class="tag ${job.no_agent ? 'tag-no-agent' : 'tag-llm'}">${job.no_agent ? 'no-agent' : 'LLM'}</span></td>`;
+  if (key === 'agent') return `<td><span class="tag ${job.no_agent ? 'tag-no-agent' : 'tag-llm'}">${job.no_agent ? t('cna') : t('cl0')}</span></td>`;
   if (key === '_actions') return `<td>
     <div class="job-actions">
       <button class="job-action-btn edit" onclick="openEditModal(event, '${escapeJs(profile)}', '${escapeJs(job.id)}')">Editar</button>
@@ -3010,7 +3016,7 @@ function renderList(jobs, grid) {
               ondragover="handleColumnDragOver(event)"
               ondragleave="handleColumnDragLeave(event)"
               ondrop="handleColumnDrop(event, '${key}')"
-              ondragend="handleColumnDragEnd()">${label}${key === '_actions' ? '' : listSortMark(key)}</th>`;
+              ondragend="handleColumnDragEnd()">${translateCol(key)||label}${key === '_actions' ? '' : listSortMark(key)}</th>`;
           }).join('')}
         </tr></thead>
         <tbody>
